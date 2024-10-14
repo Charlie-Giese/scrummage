@@ -3,7 +3,7 @@ use crate::fixtures::{Fixture, FixtureList, Teams};
 
 use std::iter::zip;
 
- fn get_html_document(url : String) -> Html {
+fn get_html_document(url : String) -> Html {
     
     println!("{:?}", url);
 
@@ -77,6 +77,63 @@ pub fn get_flist(team : String, url : String) -> FixtureList {
     let flist = populate_flist(team, child_nodes);
 
     flist
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::mock;
+    use scraper::{Html, Selector};
+
+    #[test]
+    fn test_get_html_document() {
+        // Mock URL and response
+        let mock_url = &mockito::server_url();
+        let mock_html = "<html><body><h1>Test</h1></body></html>";
+
+        // Set up the mock server response
+        let _m = mock("GET", "/")
+            .with_status(200)
+            .with_header("content-type", "text/html")
+            .with_body(mock_html)
+            .create();
+
+        // Call the function with the mock URL
+        let result = get_html_document(mock_url.to_string());
+
+        // Verify the HTML is parsed correctly
+        assert!(result.root_element().select(&scraper::Selector::parse("h1").unwrap()).next().is_some());
+    }
+
+    #[test]
+    fn test_get_child_nodes() {
+        // Mock HTML content
+        let mock_html = r#"
+            <html>
+                <body>
+                    <div id="main-data">
+                        <div id="child1">Content 1</div>
+                        <div id="child2">Content 2</div>
+                    </div>
+                </body>
+            </html>
+        "#;
+
+        // Parse the HTML content
+        let parsed_html = Html::parse_document(mock_html);
+
+        // Call the function to get the child node
+        let result = get_child_nodes(&parsed_html);
+
+        // Verify that the result is Some and matches the expected element
+        assert!(result.is_some());
+
+        // Verify the id of the first child node is "child1"
+        let first_child = result.unwrap();
+        let child_id = first_child.value().attr("id").unwrap();
+        assert_eq!(child_id, "child1");
+    }
 
 }
 
