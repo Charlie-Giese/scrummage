@@ -7,4 +7,9 @@ edition = "2021"
 reqwest={version = "0.12.8", features = ["blocking"]}
 scraper="0.20.0"
 chrono ="0.4.38"
+chrono-tz = "0.10.0"
 clap = { version = "4.0", features = ["derive"] }
+
+
+[dev-dependencies]
+mockito = "0.30.0"
