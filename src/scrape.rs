@@ -3,8 +3,10 @@ use crate::fixtures::{Fixture, FixtureList, Teams};
 
 use std::iter::zip;
 
- fn get_html_document(url : &str) -> Html {
-        
+ fn get_html_document(url : String) -> Html {
+    
+    println!("{:?}", url);
+
     let response = reqwest::blocking::get(url);
     let html_content = response.unwrap().text().unwrap();
 
@@ -64,7 +66,7 @@ fn populate_flist(team : String, children : ElementRef) -> FixtureList {
     flist
 }
 
-pub fn get_flist(team : String, url : &str) -> FixtureList {
+pub fn get_flist(team : String, url : String) -> FixtureList {
 
     let document = get_html_document(url);
     let child_nodes = match get_child_nodes(&document) {
