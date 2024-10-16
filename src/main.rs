@@ -1,11 +1,13 @@
 mod scrape;
 mod fixtures;
-mod datetime;
+//mod datetime;
 
 use scrape::get_flist;
 use clap::{Parser};
+use chrono::{Utc, NaiveDate, Datelike, Months, Days};
+use fixtures::FixtureList;
 
-const URL_BASE_BBC : &str = "https://www.bbc.com/sport/rugby-union/teams/PLACEHOLDER/scores-fixtures";
+const URL_BASE_BBC : &str = "https://www.bbc.com/sport/rugby-union/teams/PLACEHOLDER/scores-fixtures/";
 
 
 #[derive(Parser, Debug)]
@@ -14,40 +16,72 @@ pub struct Cli {
     /// Team
     #[clap(short)]
     team : TeamScope,
+    /// Number of Fixtures to print
+    #[clap(short)]
+    nfix : usize,
 }
 
-#[derive(clap::ValueEnum, Clone, Debug)]
+#[derive(clap::ValueEnum, Clone, Debug, Copy)]
 enum TeamScope {
     Leinster,
     Munster,
     Connacht,
     Ulster,
-    Ireland,
 }
 
-fn get_url(team: TeamScope) -> String {
+fn get_url(team: TeamScope, date : NaiveDate) -> String {
     
     let team_str = match team {
         TeamScope::Leinster     => "leinster",
         TeamScope::Munster      => "munster",
         TeamScope::Connacht     => "connacht",
         TeamScope::Ulster       => "ulster",
-        TeamScope::Ireland      => "ireland",
     };
 
-    let url = URL_BASE_BBC;
-    url.replace("PLACEHOLDER", team_str)
+    let mut url = String::from(URL_BASE_BBC);
+    url = url.replace("PLACEHOLDER", team_str);
 
+    url.push_str(&date.year().to_string());
+    url.push_str("-");
+    url.push_str(&date.month().to_string());
+
+    url
+}
+
+fn get_next_fixtures(n : usize, date : NaiveDate, team : TeamScope) -> Result<FixtureList, Box<dyn std::error::Error>> {
+
+    let mut fxlist = FixtureList::new();
+
+    let mut local_date = date.clone();
+
+    loop {
+        let url = get_url(team, local_date); 
+        let fx_res = get_flist(url, &mut fxlist);
+        match fx_res {
+            Ok(len) => {
+                if len < n {
+                    local_date = local_date.checked_add_months(Months::new(1)).unwrap();
+                    local_date = local_date.checked_sub_days(Days::new(local_date.day() as u64 - 1)).unwrap();
+                } else {
+                    break;
+                }
+            },
+            Err(e) => return Err(e),
+        }
+    }
+    return Ok(fxlist);
 }
 
 fn main() {
 
     let team = Cli::parse().team;
-    let url = get_url(team);
+    let n    = Cli::parse().nfix;
 
-    let flist = get_flist(String::from("Leinster"), url);
-
-    flist.print_flist();
-
+    let today = Utc::now();
+    
+    let fxlist = match get_next_fixtures(n, today.date_naive(), team) {
+        Ok(fxlist)      => fxlist.print_flist(n),
+        Err(e)          => panic!("error getting fixtures: {:?}", e),
+    };
 }
 
