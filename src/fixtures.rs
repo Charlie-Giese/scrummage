@@ -13,7 +13,6 @@ pub struct Fixture {
 }
 
 pub struct FixtureList {
-    length          : usize,
     fixtures    : Vec<Fixture>,
 }
 
@@ -21,11 +20,6 @@ impl Teams {
 
     pub fn new() -> Teams {
         Teams { home: String::from("TEAM PLACEHOLDER"), away: String::from("TEAM PLACEHOLDER") }
-    }
-
-    pub fn reset(&mut self) {
-        self.home = String::from("TEAM PLACEHOLDER");
-        self.away = String::from("TEAM PLACEHOLDER");
     }
 }
 
@@ -42,17 +36,21 @@ impl Fixture {
 }
 
 impl FixtureList {
-    pub fn new (length : usize) -> FixtureList {
-        FixtureList{ length: length, fixtures: Vec::<Fixture>::new() }
+    pub fn new () -> FixtureList {
+        FixtureList{ fixtures: Vec::<Fixture>::new() }
     }
 
     pub fn push_fx(&mut self, fx : Fixture) {
         self.fixtures.push(fx);
     }
 
-    pub fn print_flist(&self) {
-        for fx in self.fixtures.iter() {
-            fx.print_fixture();
+    pub fn get_len(&self) -> usize {
+        return self.fixtures.len();
+    }
+
+    pub fn print_flist(&self, n : usize) {
+        for i in 0..n {
+            self.fixtures[i].print_fixture();
         }
     }
 }
