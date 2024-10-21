@@ -9,4 +9,5 @@ cargo run -- -h
 - Make all times local timezone
 - Add handling of months with no fixtures
 - Nicer output formatting
+- Add international teams
 
