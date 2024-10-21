@@ -1,6 +1,6 @@
 mod scrape;
 mod fixtures;
-//mod datetime;
+mod datetime;
 
 use scrape::get_flist;
 use clap::{Parser};
@@ -42,7 +42,7 @@ fn get_url(team: TeamScope, date : NaiveDate) -> String {
     url = url.replace("PLACEHOLDER", team_str);
 
     url.push_str(&date.format("%Y-%m").to_string());
-
+    
     url
 }
 
@@ -54,7 +54,7 @@ fn get_next_fixtures(n : usize, date : NaiveDate, team : TeamScope) -> Result<Fi
 
     loop {
         let url = get_url(team, local_date); 
-        let fx_res = get_flist(url, &mut fxlist);
+        let fx_res = get_flist(url, &mut fxlist, local_date.year());
         match fx_res {
             Ok(len) => {
                 if len < n {

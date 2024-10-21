@@ -3,6 +3,7 @@ use crate::fixtures::{Fixture, FixtureList, Teams};
 use chrono::{DateTime, Utc};
 
 use std::iter::zip;
+use crate::datetime::format_datetimes;
 
 fn get_html_document(url : String) -> Html {
     
@@ -29,40 +30,41 @@ fn get_child_nodes(parsed_html : &Html) -> Option<ElementRef> {
     children
 }
 
-fn populate_flist(children : ElementRef, fxlist : &mut FixtureList) -> Result<usize, Box<dyn std::error::Error>> {
+fn populate_flist(children : ElementRef, fxlist : &mut FixtureList, year : i32) -> Result<usize, Box<dyn std::error::Error>> {
 
     let dates = children
         .select(&Selector::parse("h2").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
         .collect::<Vec<_>>();
-
-     let comps = children
+    
+    let comps = children
         .select(&Selector::parse("h3").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
         .collect::<Vec<_>>();
 
-     let times = children
+    let times = children
         .select(&Selector::parse("time").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
         .collect::<Vec<_>>();
-
+    
     let teams = children
         .select(&Selector::parse("span").unwrap())
         .filter(|elem| elem.value().classes().next().unwrap() == "emlpoi30")
         .collect::<Vec<_>>();
-
-    for (i, (date, (time, comp))) in zip(dates, zip(times, comps)).enumerate() {
+    let datetimes = format_datetimes(times.clone(), dates.clone(), year);
+    
+    for (i, (datetime, comp)) in zip(datetimes, comps).enumerate() {
         let mut current = Teams::new();
         current.home = teams[2 * i].text().next().unwrap().to_string();
         current.away = teams[2 * i + 1].text().next().unwrap().to_string();
-        let fx = Fixture::new(current, date, time, comp);
+        let fx = Fixture::new(current, datetime, comp);
         fxlist.push_fx(fx);
     }
 
     return Ok(fxlist.get_len());
 }
 
-pub fn get_flist(url : String, fxlist : &mut FixtureList) -> Result<usize, Box<dyn std::error::Error>> {
+pub fn get_flist(url : String, fxlist : &mut FixtureList, year : i32) -> Result<usize, Box<dyn std::error::Error>> {
 
     let document = get_html_document(url);
     let child_nodes = match get_child_nodes(&document) {
@@ -70,7 +72,7 @@ pub fn get_flist(url : String, fxlist : &mut FixtureList) -> Result<usize, Box<d
         None        => panic!("error getting child nodes..."),
     };
 
-    let res = populate_flist(child_nodes, fxlist);
+    let res = populate_flist(child_nodes, fxlist, year);
 
     return res;
 

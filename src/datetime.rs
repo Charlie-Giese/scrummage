@@ -2,54 +2,76 @@
 // Author: Charlie Giese
 //
 
-use chrono::{NaiveDateTime, TimeZone};
+use chrono::{NaiveDateTime, TimeZone, DateTime, Utc, NaiveDate, NaiveTime};
 use chrono_tz::Europe::London;
 
-pub fn uk_time_to_utc(uk_time: &str, format: &str) -> chrono::DateTime<chrono::Utc> {
-    // Parse the input time string as a NaiveDateTime
-    let naive_time = NaiveDateTime::parse_from_str(uk_time, format).expect("Invalid date format");
+fn uk_naive_to_utc(naive_datetime: NaiveDateTime) -> DateTime<Utc> {
+    // Step 1: Convert NaiveDateTime to DateTime<London> (timezone-aware)
+    let london_datetime = London.from_local_datetime(&naive_datetime)
+                                .single()
+                                .expect("Invalid or ambiguous date (due to DST)");
 
-    // Use the London timezone, which handles both BST and GMT transitions
-    let london_time = London.from_local_datetime(&naive_time).unwrap();
+    // Step 2: Convert London DateTime to UTC
+    let utc_datetime = london_datetime.with_timezone(&Utc);
 
-    // Convert to UTC
-    london_time.with_timezone(&chrono::Utc)
+    utc_datetime
+}
+
+pub fn format_datetimes(times : Vec<String>, dates : Vec<String>, year : i32) -> Vec<DateTime<Utc>> {
+    
+    let mut dtvec = Vec::<DateTime<Utc>>::new();
+
+    for (time, date) in times.iter().zip(dates) {
+        let date_without_weekday = date.splitn(2, ' ').nth(1).unwrap();
+        let cleaned_date = date_without_weekday
+            .replace("st", "")
+            .replace("nd", "")
+            .replace("rd", "")
+            .replace("th", "");
+        let full_date_str = format!("{} {}", cleaned_date, year);
+        let parsed_date = NaiveDate::parse_from_str(&full_date_str, "%d %B %Y").unwrap();
+        let parsed_time = NaiveTime::parse_from_str(time, "%H:%M").unwrap();
+
+        let datetime_uk =  NaiveDateTime::new(parsed_date, parsed_time);
+        let datetime_utc = uk_naive_to_utc(datetime_uk);
+
+        dtvec.push(datetime_utc);
+    }
+
+    dtvec
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDateTime, Utc};
+    use chrono::NaiveDateTime;
 
     #[test]
-    fn test_uk_time_to_utc_winter() {
-        // Test a time in GMT (winter time, no offset from UTC)
-        let uk_time = "2024-12-25 15:00:00"; // Christmas, should be GMT
-        let format = "%Y-%m-%d %H:%M:%S";
-        let expected_utc = "2024-12-25 15:00:00";
+    fn test_uk_naive_to_utc_bst() {
+        // Date during BST (British Summer Time, UTC+1)
+        let naive_datetime = NaiveDateTime::parse_from_str("2024-07-10 15:30:00", "%Y-%m-%d %H:%M:%S")
+            .expect("Invalid datetime format");
 
-        let utc_time = uk_time_to_utc(uk_time, format);
-        let expected_utc_time = NaiveDateTime::parse_from_str(expected_utc, format)
-            .unwrap()
-            .and_utc();
+        // Convert UK time to UTC
+        let utc_datetime = uk_naive_to_utc(naive_datetime);
 
-        assert_eq!(utc_time, expected_utc_time);
+        // Assert that the UTC time is one hour behind (BST = UTC+1)
+        assert_eq!(utc_datetime.to_string(), "2024-07-10 14:30:00 UTC");
     }
 
     #[test]
-    fn test_uk_time_to_utc_summer() {
-        // Test a time in BST (summer time, +1 hour offset from UTC)
-        let uk_time = "2024-07-15 15:00:00"; // Should be BST
-        let format = "%Y-%m-%d %H:%M:%S";
-        let expected_utc = "2024-07-15 14:00:00"; // 1 hour behind BST
+    fn test_uk_naive_to_utc_gmt() {
+        // Date during GMT (Greenwich Mean Time, UTC+0)
+        let naive_datetime = NaiveDateTime::parse_from_str("2024-12-10 15:30:00", "%Y-%m-%d %H:%M:%S")
+            .expect("Invalid datetime format");
 
-        let utc_time = uk_time_to_utc(uk_time, format);
-        let expected_utc_time = NaiveDateTime::parse_from_str(expected_utc, format)
-            .unwrap()
-            .and_utc();
+        // Convert UK time to UTC
+        let utc_datetime = uk_naive_to_utc(naive_datetime);
 
-        assert_eq!(utc_time, expected_utc_time);
+        // Assert that the UTC time is the same (GMT = UTC+0)
+        assert_eq!(utc_datetime.to_string(), "2024-12-10 15:30:00 UTC");
     }
 }
+
 
