@@ -41,9 +41,7 @@ fn get_url(team: TeamScope, date : NaiveDate) -> String {
     let mut url = String::from(URL_BASE_BBC);
     url = url.replace("PLACEHOLDER", team_str);
 
-    url.push_str(&date.year().to_string());
-    url.push_str("-");
-    url.push_str(&date.month().to_string());
+    url.push_str(&date.format("%Y-%m").to_string());
 
     url
 }
