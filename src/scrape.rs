@@ -1,6 +1,5 @@
 use scraper::{Html, Selector, ElementRef};
 use crate::fixtures::{Fixture, FixtureList, Teams}; 
-use chrono::{DateTime, Utc};
 
 use std::iter::zip;
 use crate::datetime::format_datetimes;
@@ -59,6 +58,7 @@ fn populate_flist(children : ElementRef, fxlist : &mut FixtureList, year : i32) 
         current.away = teams[2 * i + 1].text().next().unwrap().to_string();
         let fx = Fixture::new(current, datetime, comp);
         fxlist.push_fx(fx);
+
     }
 
     return Ok(fxlist.get_len());

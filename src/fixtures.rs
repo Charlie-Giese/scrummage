@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 
 
 #[derive(Clone)]
@@ -9,7 +9,7 @@ pub struct Teams {
 
 pub struct Fixture {
     teams       : Teams,
-    datetime    : DateTime<Utc>,
+    datetime    : DateTime<Local>,
     competition : String,
 }
 
@@ -25,7 +25,7 @@ impl Teams {
 }
 
 impl Fixture {
-    pub fn new(teams : Teams, datetime : DateTime<Utc>, competition : String) -> Fixture {
+    pub fn new(teams : Teams, datetime : DateTime<Local>, competition : String) -> Fixture {
         Fixture { teams: teams, datetime: datetime, competition: competition }
     }
 
