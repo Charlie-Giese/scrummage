@@ -1,11 +1,14 @@
-use scraper::{Html, Selector, ElementRef};
-use crate::fixtures::{Fixture, FixtureList, Teams}; 
+// Source file for functions related to gathering fixture information from web
+// Author: Charles Giese
 
-use std::iter::zip;
+use crate::fixtures::{Fixture, FixtureList, Teams};
+use scraper::{ElementRef, Html, Selector};
+
 use crate::datetime::format_datetimes;
+use std::iter::zip;
 
-fn get_html_document(url : String) -> Html {
-    
+// Function for getting HTML document from URL
+fn get_html_document(url: String) -> Html {
     let response = reqwest::blocking::get(url).expect("could not access url...");
     let html_content = response.text().unwrap();
 
@@ -14,28 +17,27 @@ fn get_html_document(url : String) -> Html {
     parsed_html
 }
 
-fn get_child_nodes(parsed_html : &Html) -> Option<ElementRef> {
-    
+// Function for getting all child nodes from HTML document
+fn get_child_nodes(parsed_html: &Html) -> Option<ElementRef> {
     let main_selector = &Selector::parse("div#main-data").unwrap();
-    let main_body = parsed_html
-        .select(&main_selector)
-        .next()
-        .unwrap();
+    let main_body = parsed_html.select(&main_selector).next().unwrap();
     let child_node_selector = &Selector::parse("div").unwrap();
-    let children = main_body
-        .select(&child_node_selector)
-        .next();
+    let children = main_body.select(&child_node_selector).next();
 
     children
 }
 
-fn populate_flist(children : ElementRef, fxlist : &mut FixtureList, year : i32) -> Result<usize, Box<dyn std::error::Error>> {
-
+// Function for getting fixture information from child nodes and adding them to fixture list
+fn populate_flist(
+    children: ElementRef,
+    fxlist: &mut FixtureList,
+    year: i32,
+) -> Result<usize, Box<dyn std::error::Error>> {
     let dates = children
         .select(&Selector::parse("h2").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
         .collect::<Vec<_>>();
-    
+
     let comps = children
         .select(&Selector::parse("h3").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
@@ -45,44 +47,46 @@ fn populate_flist(children : ElementRef, fxlist : &mut FixtureList, year : i32) 
         .select(&Selector::parse("time").unwrap())
         .map(|elem| elem.text().next().unwrap().to_string())
         .collect::<Vec<_>>();
-    
+
     let teams = children
         .select(&Selector::parse("span").unwrap())
         .filter(|elem| elem.value().classes().next().unwrap() == "emlpoi30")
         .collect::<Vec<_>>();
     let datetimes = format_datetimes(times.clone(), dates.clone(), year);
-    
+
     for (i, (datetime, comp)) in zip(datetimes, comps).enumerate() {
         let mut current = Teams::new();
         current.home = teams[2 * i].text().next().unwrap().to_string();
         current.away = teams[2 * i + 1].text().next().unwrap().to_string();
         let fx = Fixture::new(current, datetime, comp);
         fxlist.push_fx(fx);
-
     }
 
     return Ok(fxlist.get_len());
 }
 
-pub fn get_flist(url : String, fxlist : &mut FixtureList, year : i32) -> Result<usize, Box<dyn std::error::Error>> {
-
+// Public wrapper function for populating a fixture list
+pub fn get_flist(
+    url: String,
+    fxlist: &mut FixtureList,
+    year: i32,
+) -> Result<usize, Box<dyn std::error::Error>> {
     let document = get_html_document(url);
     let child_nodes = match get_child_nodes(&document) {
-        Some(x)     => x,
-        None        => panic!("error getting child nodes..."),
+        Some(x) => x,
+        None => panic!("error getting child nodes..."),
     };
 
     let res = populate_flist(child_nodes, fxlist, year);
 
     return res;
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use mockito::mock;
-    use scraper::{Html, Selector};
+    use scraper::Html;
 
     #[test]
     fn test_get_html_document() {
@@ -101,7 +105,11 @@ mod tests {
         let result = get_html_document(mock_url.to_string());
 
         // Verify the HTML is parsed correctly
-        assert!(result.root_element().select(&scraper::Selector::parse("h1").unwrap()).next().is_some());
+        assert!(result
+            .root_element()
+            .select(&scraper::Selector::parse("h1").unwrap())
+            .next()
+            .is_some());
     }
 
     #[test]
@@ -132,6 +140,4 @@ mod tests {
         let child_id = first_child.value().attr("id").unwrap();
         assert_eq!(child_id, "child1");
     }
-
 }
-
