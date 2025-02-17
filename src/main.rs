@@ -89,7 +89,7 @@ fn main() {
     let today = Utc::now();
 
     let fxlist = match get_next_fixtures(n, today.date_naive(), team) {
-        Ok(fxlist) => fxlist.print_flist(n),
+        Ok(fxlist) => fxlist,
         Err(e) => panic!("error getting fixtures: {:?}", e),
     };
 
@@ -103,6 +103,8 @@ fn main() {
         appindicator3::IndicatorCategory::ApplicationStatus, // Category
     );
 
+    indicator.set_icon_full("/home/charlie/.icons/rugby.png", "Rugby Icon");
+
     // Set the status of the indicator
     indicator.set_status(IndicatorStatus::Active);
 
@@ -110,17 +112,17 @@ fn main() {
     let menu = Menu::new();
 
     // Add fixtures to the menu
-    for fixture in fixtures {
-        let item = MenuItem::with_label(fixture);
+    for fixture in fxlist {
+        let item = MenuItem::with_label(fixture.format_fixture().as_str());
         item.show();
         menu.append(&item);
     }
 
     // Add quit button
-    let quit_item = MenuItem::with_label("Quit");
-    quit_item.connect_activate(|_| gtk::main_quit());
-    quit_item.show();
-    menu.append(&quit_item);
+    //let quit_item = MenuItem::with_label("Quit");
+    //quit_item.connect_activate(|_| gtk::main_quit());
+    //quit_item.show();
+    //menu.append(&quit_item);
 
     // Set the menu on the indicator
     indicator.set_menu(Some(&menu));
