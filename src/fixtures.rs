@@ -9,6 +9,7 @@ pub struct Teams {
     pub away: String,
 }
 
+#[derive(Clone)]
 pub struct Fixture {
     teams: Teams,
     datetime: DateTime<Local>,
@@ -17,6 +18,7 @@ pub struct Fixture {
 
 pub struct FixtureList {
     fixtures: Vec<Fixture>,
+    idx: usize,
 }
 
 impl Teams {
@@ -45,12 +47,24 @@ impl Fixture {
             format!("{}", self.datetime.format("%d-%m-%Y %H:%M"))
         );
     }
+
+    pub fn format_fixture(&self) -> String {
+        let fl = format!(
+            "{home} vs {away}, {datetime}",
+            home = self.teams.home,
+            away = self.teams.away,
+            datetime = self.datetime.format("%d-%m-%Y %H:%M")
+        );
+
+        return fl;
+    }
 }
 
 impl FixtureList {
     pub fn new() -> FixtureList {
         FixtureList {
             fixtures: Vec::<Fixture>::new(),
+            idx: 0,
         }
     }
 
@@ -65,6 +79,20 @@ impl FixtureList {
     pub fn print_flist(&self, n: usize) {
         for i in 0..n {
             self.fixtures[i].print_fixture();
+        }
+    }
+}
+
+impl Iterator for FixtureList {
+    type Item = Fixture;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.idx < self.fixtures.len() {
+            let result = self.fixtures[self.idx].clone();
+            self.idx += 1;
+            Some(result)
+        } else {
+            None
         }
     }
 }
