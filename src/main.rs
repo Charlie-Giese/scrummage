@@ -103,7 +103,7 @@ fn main() {
         appindicator3::IndicatorCategory::ApplicationStatus, // Category
     );
 
-    indicator.set_icon_full("/home/charlie/.icons/rugby.png", "Rugby Icon");
+    indicator.set_icon_full("/home/charlie/.icons/rugby.jpg", "Rugby Icon");
 
     // Set the status of the indicator
     indicator.set_status(IndicatorStatus::Active);
