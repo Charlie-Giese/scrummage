@@ -1,9 +1,11 @@
+mod config;
 mod datetime;
 mod fixtures;
 mod scrape;
 
 use chrono::{Datelike, Days, Months, NaiveDate, Utc};
 use clap::Parser;
+use config::Config;
 use fixtures::FixtureList;
 use scrape::get_flist;
 
@@ -88,6 +90,9 @@ fn main() {
 
     let today = Utc::now();
 
+    let config = Config::load();
+    println!("Loaded Config: {:?}", config);
+
     let fxlist = match get_next_fixtures(n, today.date_naive(), team) {
         Ok(fxlist) => fxlist,
         Err(e) => panic!("error getting fixtures: {:?}", e),
@@ -119,10 +124,10 @@ fn main() {
     }
 
     // Add quit button
-    //let quit_item = MenuItem::with_label("Quit");
-    //quit_item.connect_activate(|_| gtk::main_quit());
-    //quit_item.show();
-    //menu.append(&quit_item);
+    let quit_item = MenuItem::with_label("Quit");
+    quit_item.connect_activate(|_| gtk::main_quit());
+    quit_item.show();
+    menu.append(&quit_item);
 
     // Set the menu on the indicator
     indicator.set_menu(Some(&menu));
