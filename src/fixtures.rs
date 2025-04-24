@@ -72,6 +72,10 @@ impl FixtureList {
         self.fixtures.push(fx);
     }
 
+    pub fn truncate(&mut self, len: usize) {
+        self.fixtures.truncate(len);
+    }
+
     pub fn get_len(&self) -> usize {
         return self.fixtures.len();
     }
