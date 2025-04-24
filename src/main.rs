@@ -74,7 +74,10 @@ fn get_next_fixtures(
                     local_date = local_date
                         .checked_sub_days(Days::new(local_date.day() as u64 - 1))
                         .unwrap();
+                } else if len == n {
+                    break;
                 } else {
+                    fxlist.truncate(n);
                     break;
                 }
             }
