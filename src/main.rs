@@ -5,7 +5,7 @@ mod scrape;
 
 use chrono::{Datelike, Days, Months, NaiveDate, Utc};
 use clap::Parser;
-use config::Config;
+use config::AppConfig;
 use fixtures::FixtureList;
 use scrape::get_flist;
 
@@ -14,6 +14,7 @@ use appindicator3::Indicator;
 use appindicator3::IndicatorStatus;
 use gtk::prelude::*;
 use gtk::{Menu, MenuItem};
+use serde::ser::Error;
 use std::thread;
 use std::time::Duration;
 
@@ -25,10 +26,18 @@ const URL_BASE_BBC: &str =
 pub struct Cli {
     /// Team
     #[clap(short)]
-    team: TeamScope,
+    team: Vec<String>,
     /// Number of Fixtures to print
     #[clap(short)]
     nfix: usize,
+}
+
+#[derive(Debug)]
+pub struct UserOptions {
+    pub team: TeamScope,
+    pub nfix: usize,
+    pub icon_style: String,
+    pub date_format: String,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy)]
@@ -37,6 +46,18 @@ enum TeamScope {
     Munster,
     Connacht,
     Ulster,
+}
+
+fn get_team(param: String) -> Result<TeamScope, Box<dyn std::error::Error>> {
+    let p_str = param.as_str();
+
+    match p_str {
+        "leinster" => return Ok(TeamScope::Leinster),
+        "munster" => return Ok(TeamScope::Munster),
+        "connacht" => return Ok(TeamScope::Connacht),
+        "ulster" => return Ok(TeamScope::Ulster),
+        _ => return Err("team is invalid".into()),
+    }
 }
 
 fn get_url(team: TeamScope, date: NaiveDate) -> String {
@@ -87,14 +108,55 @@ fn get_next_fixtures(
     return Ok(fxlist);
 }
 
-fn main() {
-    let team = Cli::parse().team;
-    let n = Cli::parse().nfix;
+fn build_user_options(cli: &Cli, config: Option<AppConfig>) -> Result<UserOptions, String> {
+    let default_icon = "rugby".to_string();
+    let default_date = "%Y-%m-%d".to_string();
+
+    let (team, nfix) = {
+        let cfg_pref = config.as_ref().and_then(|c| c.preferences.as_ref());
+
+        let team = Some(cli.team.clone())
+            .or_else(|| cfg_pref.and_then(|p| p.teams.clone()))
+            .ok_or("Missing required field: team")?;
+
+        let nfix = Some(cli.nfix.clone())
+            .or_else(|| cfg_pref.and_then(|p| p.nfix))
+            .ok_or("Missing required field: nfix")?;
+
+        (team, nfix)
+    };
+
+    let (icon_style, date_format) = {
+        let fmt = config.and_then(|c| c.formatting);
+        (
+            fmt.as_ref()
+                .and_then(|f| f.icon_style.clone())
+                .unwrap_or(default_icon),
+            fmt.and_then(|f| f.date_format.clone())
+                .unwrap_or(default_date),
+        )
+    };
+
+    let team_enum = get_team(team[0].clone()).unwrap();
+
+    Ok(UserOptions {
+        team: team_enum,
+        nfix,
+        icon_style,
+        date_format,
+    })
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::try_parse();
+    let config = AppConfig::try_load();
+
+    let params = build_user_options(&cli.unwrap(), Some(config.unwrap()));
+
+    let team = params.as_ref().unwrap().team;
+    let n = params.unwrap().nfix;
 
     let today = Utc::now();
-
-    let config = Config::load();
-    println!("Loaded Config: {:?}", config);
 
     let fxlist = match get_next_fixtures(n, today.date_naive(), team) {
         Ok(fxlist) => fxlist,
@@ -145,4 +207,6 @@ fn main() {
 
     // Run GTK main loop
     gtk::main();
+
+    Ok(())
 }
