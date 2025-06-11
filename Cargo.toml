@@ -8,12 +8,14 @@ reqwest={version = "0.12.8", features = ["blocking"]}
 scraper="0.20.0"
 chrono ="0.4.38"
 chrono-tz = "0.10.0"
-clap = { version = "4.0", features = ["derive"] }
 appindicator3 = "0.2.0"
 gtk = "0.15"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 config = "0.14"
+log = "0.4.27"
+dirs = "6.0.0"
+tokio = { version = "1.45.1", features = ["full"] }
 
 [dev-dependencies]
 mockito = "0.30.0"
