@@ -24,6 +24,9 @@ pub fn format_datetimes(times: Vec<String>, dates: Vec<String>, year: i32) -> Ve
     let mut dtvec = Vec::<DateTime<Local>>::new();
 
     for (time, date) in times.iter().zip(dates) {
+        if time.trim() == "TBC" {
+            continue;
+        }
         let date_without_weekday = date.splitn(2, ' ').nth(1).unwrap();
         let cleaned_date = date_without_weekday
             .replace("st", "")
