@@ -85,6 +85,10 @@ impl FixtureList {
             self.fixtures[i].print_fixture();
         }
     }
+
+    pub fn sort_by_date(&mut self) {
+        self.fixtures.sort_by_key(|fixture| fixture.datetime);
+    }
 }
 
 impl Iterator for FixtureList {
